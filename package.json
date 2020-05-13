@@ -1,0 +1,39 @@
+{
+  "name": "quovadis",
+  "version": "1.0.0",
+  "main": "main.js",
+  "type": "module",
+  "scripts": {
+    "build": "npm run build:module && npm run build:script",
+    "build:module": "babel src -d lib",
+    "build:script": "cp src/quovadis.js lib/quovadis.min.js && sed -i '' -E 's,export default .*;,,g' lib/quovadis.min.js && babel lib/quovadis.min.js -o lib/quovadis.min.js  && terser --compress --output lib/quovadis.min.js -- lib/quovadis.min.js"
+  },
+  "author": "Tim Jüdemann",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/timjuedemann/quovadis.git"
+  },
+  "keywords": [
+    "js",
+    "jquery",
+    "scroll",
+    "direction",
+    "scroll-direction"
+  ],
+  "bugs": {
+    "url": "https://github.com/timjuedemann/quovadis/issues"
+  },
+  "homepage": "https://github.com/timjuedemann/quovadis#readme",
+  "devDependencies": {
+    "@babel/cli": "^7.8.4",
+    "@babel/core": "^7.9.6",
+    "@babel/preset-env": "^7.8.4",
+    "terser": "^4.6.3"
+  },
+  "directories": {
+    "lib": "lib"
+  },
+  "dependencies": {},
+  "description": ""
+}
