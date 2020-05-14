@@ -1,3 +1,3 @@
-import quoVadis from './lib/quovadis.js';
+import Quovadis from './lib/quovadis.js';
 
-export default quoVadis
+export default Quovadis

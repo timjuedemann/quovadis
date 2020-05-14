@@ -1,111 +1,119 @@
-let settings = {
-  off: false,
-  context: $(window),
-  horizontal: false,
-  historyLength: 32,
-  historyMaxAge: 512,
-  thresholdPixels: 64,
-  callback: function() {
-	$('html').removeClass(function (index, className) {
-                    return (className.match(/(^|\s)scrolling-\S+/g) || []).join(' ');
-                }).addClass('scrolling-' + dir);
-  },
-  event: true,
-  fireEvent: function() {
-    window.dispatchEvent(new CustomEvent('scrollDirectionChange', {
-      detail: {
-        direction: dir
-      }
-    }));
-  }
-}
-
-const $document = $(document);
-const $window = settings.context;
-const historyLength = settings.historyLength; // Ticks to keep in history.
-const historyMaxAge = settings.historyMaxAge; // History data time-to-live (ms).
-const thresholdPixels = settings.thresholdPixels; // Ignore moves smaller than this.
-const history = Array(historyLength);
-
-let isVer;
-let dir = isVer ? 'down' : 'right'; // 'up' or 'down'
-let e; // last scroll event
-let pivot; // "high-water mark"
-let pivotTime = 0;
-
-const tick = function tickFunc() {
-  let y = isVer ? $window.scrollTop() : $window.scrollLeft();
-  const t = e.timeStamp;
-  const furthest = dir === 'down' || dir === 'right' ? Math.max : Math.min;
-
-  // Apply bounds to handle rubber banding
-  const yMax = isVer ? $document.height() - $window.height() : $document.width() - $window.width();
-  y = Math.max(0, y);
-  y = Math.min(yMax, y);
-
-  // Update history
-  history.unshift({
-    y,
-    t
-  });
-  history.pop();
-
-  // Are we continuing in the same direction?
-  if (y === furthest(pivot, y)) {
-    // Update "high-water mark" for current direction
-    pivotTime = t;
-    pivot = y;
-    return;
-  }
-  // else we have backed off high-water mark
-
-  // Apply max age to find current reference point
-  const cutoffTime = t - historyMaxAge;
-  if (cutoffTime > pivotTime) {
-    pivot = y;
-    for (let i = 0; i < historyLength; i += 1) {
-      if (!history[i] || history[i].t < cutoffTime) break;
-      pivot = furthest(pivot, history[i].y);
+class Quovadis {
+    constructor(opt = {}) {
+        this.opt = Object.assign({}, this.defaults(), opt);
+        this.$document = document.documentElement;
+        this.$window = this.opt.context;
+        this.prefix = this.opt.prefix;
+        this.horizontal = this.opt.horizontal;
+        this.isVer = !this.horizontal;
+        this.historyLength = this.opt.historyLength; // Ticks to keep in history.
+        this.historyMaxAge = this.opt.historyMaxAge; // History data time-to-live (ms).
+        this.thresholdPixels = this.opt.thresholdPixels; // Ignore moves smaller than this.
+        this.callback = this.opt.callback;
+        this.event = this.opt.event;
+        this.history = Array(this.historyLength);
+        return this;
     }
-  }
 
-  // Have we exceeded threshold?
-  if (Math.abs(y - pivot) > thresholdPixels) {
-    pivot = y;
-    pivotTime = t;
-	if (isVer) {
-		dir = dir === 'down' ? 'up' : 'down';
-	} else {
-		dir = dir === 'right' ? 'left' : 'right';
-	}
-    settings.callback();
-    if (settings.event === true) {
-      settings.fireEvent()
+    defaults() {
+        return {
+            prefix: 'scrolling',
+            context: window,
+            horizontal: false,
+            historyLength: 32,
+            historyMaxAge: 512,
+            thresholdPixels: 64,
+            callback: function() {
+                let classes = document.documentElement.classList;
+                for (var i = classes.length - 1; i >= 0; i--) {
+                    if (classes[i].startsWith(this.opt.prefix)) {
+                        classes.remove(classes[i]);
+                    }
+                }
+                classes.add(this.prefix + '-' + this.dir);
+            },
+            event: true,
+        }
     }
-  }
-};
 
-const handler = function handlerFunc(event) {
-  e = event;
-  window.requestAnimationFrame(tick);
-};
+    init() {
+        this.dir = this.isVer ? 'down' : 'right'; // 'up' or 'down'
+        this.pivotTime = 0;
+        this.pivot = this.isVer ? this.$window.scrollY : this.$window.scrollX;
+        this.callback();
+        console.log(this);
+        return this.$window.addEventListener('scroll', this.handler.bind(this));
+    }
 
-export default function quoVadis(options) {
-  settings = $.extend({}, settings, options);
-  if (settings.off === true) return $window.off('scroll', handler);
-  isVer = !settings.horizontal;
-  pivot = isVer ? $window.scrollTop() : $window.scrollLeft();
-  settings.callback();
-  return $window.on('scroll', handler);
+    stop() {
+        return this.$window.removeEventListener('scroll', this.handler.bind(this));
+    }
+
+    tick() {
+        let y = this.isVer ? this.$window.scrollY : this.$window.scrollX;
+        const t = this.e.timeStamp;
+        const furthest = this.dir === 'down' || this.dir === 'right' ? Math.max : Math.min;
+
+        // Apply bounds to handle rubber banding
+        const yMax = this.isVer ? this.$document.scrollHeight - this.$window.innerHeight : this.$document.scrollWidth - this.$window.innerWidth;
+        y = Math.max(0, y);
+        y = Math.min(yMax, y);
+
+        // Update history
+        this.history.unshift({
+            y,
+            t
+        });
+        this.history.pop();
+
+        // Are we continuing in the same direction?
+        if (y === furthest(this.pivot, y)) {
+            // Update "high-water mark" for current direction
+            this.pivotTime = t;
+            this.pivot = y;
+            return;
+        }
+        // else we have backed off high-water mark
+
+        // Apply max age to find current reference point
+        const cutoffTime = t - this.historyMaxAge;
+        if (cutoffTime > this.pivotTime) {
+            this.pivot = y;
+            for (let i = 0; i < this.historyLength; i += 1) {
+                if (!this.history[i] || this.history[i].t < cutoffTime) break;
+                this.pivot = furthest(this.pivot, this.history[i].y);
+            }
+        }
+
+        // Have we exceeded threshold?
+        if (Math.abs(y - this.pivot) > this.thresholdPixels) {
+            console.log('threshold');
+            this.pivot = y;
+            this.pivotTime = t;
+            if (this.isVer) {
+                this.dir = this.dir === 'down' ? 'up' : 'down';
+            } else {
+                this.dir = this.dir === 'right' ? 'left' : 'right';
+            }
+            this.callback();
+            if (this.event === true) {
+                this.dispatchEvent()
+            }
+        }
+    }
+
+    dispatchEvent() {
+        window.dispatchEvent(new CustomEvent('scrollDirectionChange', {
+            detail: {
+                direction: this.dir
+            }
+        }));
+    }
+
+    handler(event) {
+        this.e = event;
+        window.requestAnimationFrame(this.tick.bind(this));
+    }
 }
 
-const plugin = window.$ || window.jQuery || window.Zepto;
-if (plugin) {
-  plugin.fn.extend({
-    quoVadis: function quoVadisFunct(options) {
-      return quoVadis(options);
-    },
-  });
-} else {
-  throw Error('scroll-intent requires jQuery or Zepto');
-}
+export default Quovadis
