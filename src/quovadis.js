@@ -1,8 +1,7 @@
 class Quovadis {
     constructor(opt = {}) {
         this.opt = Object.assign({}, this.defaults(), opt);
-        this.$document = document.documentElement;
-        this.$window = this.opt.context;
+        this.context = this.opt.context;
         this.prefix = this.opt.prefix;
         this.horizontal = this.opt.horizontal;
         this.isVer = !this.horizontal;
@@ -12,18 +11,20 @@ class Quovadis {
         this.callback = this.opt.callback;
         this.event = this.opt.event;
         this.history = Array(this.historyLength);
+        this.scrollingElement = this.context === document.documentElement ? window : this.context;
         return this;
     }
 
     defaults() {
         return {
             prefix: 'scrolling',
-            context: window,
+            context: document.documentElement,
             horizontal: false,
             historyLength: 32,
             historyMaxAge: 512,
             thresholdPixels: 64,
             callback: function() {
+                console.log(this);
                 let classes = document.documentElement.classList;
                 for (var i = classes.length - 1; i >= 0; i--) {
                     if (classes[i].startsWith(this.opt.prefix)) {
@@ -39,31 +40,27 @@ class Quovadis {
     init() {
         this.dir = this.isVer ? 'down' : 'right'; // 'up' or 'down'
         this.pivotTime = 0;
-        this.pivot = this.isVer ? this.$window.scrollY : this.$window.scrollX;
+        this.pivot = this.isVer ? this.context.scrollTop : this.context.scrollLeft;
         this.callback();
-        console.log(this);
-        return this.$window.addEventListener('scroll', this.handler.bind(this));
+        return this.scrollingElement.addEventListener('scroll', this.handler.bind(this));
     }
 
     stop() {
-        return this.$window.removeEventListener('scroll', this.handler.bind(this));
+        return this.scrollingElement.removeEventListener('scroll', this.handler.bind(this));
     }
 
     tick() {
-        let y = this.isVer ? this.$window.scrollY : this.$window.scrollX;
+        let y = this.isVer ? this.context.scrollTop : this.context.scrollLeft;
         const t = this.e.timeStamp;
         const furthest = this.dir === 'down' || this.dir === 'right' ? Math.max : Math.min;
 
         // Apply bounds to handle rubber banding
-        const yMax = this.isVer ? this.$document.scrollHeight - this.$window.innerHeight : this.$document.scrollWidth - this.$window.innerWidth;
+        const yMax = this.isVer ? this.context.scrollHeight - this.context.clientHeight : this.context.scrollWidth - this.context.clientWidth;
         y = Math.max(0, y);
         y = Math.min(yMax, y);
 
         // Update history
-        this.history.unshift({
-            y,
-            t
-        });
+        this.history.unshift({ y, t });
         this.history.pop();
 
         // Are we continuing in the same direction?
