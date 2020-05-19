@@ -3,8 +3,9 @@
 Quovadis is a lightweight JavaScript library to facilitate dealing with changes in scroll-direction. It is based on the [scroll-intent](https://github.com/pwfisher/scroll-intent.js) plugin by [pwfisher](https://github.com/pwfisher) with some key differences:
 
 - no jQuery dependency 🙅‍♂️
-- allows to set a custom scroll target element 🎯
-- allows to target horizontal scrolling ↔️
+- offers automatic orientation detection 🔮
+- allows setting of a custom scroll target element 🎯
+- allows targetting horizontal scroll ↔️
 - sets classes on the html element instead of data-attributes ✌️
 - dispatches `scrollDirectionChange` event when scroll-direction changes 🚨
 
@@ -18,7 +19,7 @@ npm install quovadis
 
 ### Download and include via script tag
 ```html
-<script src="quovadis.mind.js"></script>
+<script src="quovadis.min.js"></script>
 ```
 
 or
@@ -42,13 +43,16 @@ Quovadis accepts a list of options. Passing no options (as in the example above)
 ```js
 var q = new Quovadis({
     context: document.documentElement,
-    horizontal: false,
+    horizontal: 'auto',
     event: true,
     historyLength: 32,
     historyMaxAge: 512,
     thresholdPixels: 64
 });
 ```
+
+### Orientation Detection
+If no value is passed to the `horizontal` option, Quovadis will try to figure out the scroll direction by comparing the position of the last element child of the `context` to the `context` itself.
 
 ### Output
 By default, Quovadis will automatically add and remove classes on the html element based on scroll direction, i.e. `scrolling-down` and `scrolling-up` or `scrolling-right` and `scrolling-left` when working in horizontal mode.
@@ -80,7 +84,7 @@ window.addEventListener('scrollDirectionChange', function(e) {
 | Property | Type | Description | Default  |
 |---------------------------|-------------|---------------|---------|
 | `context` | Element | Sets the element to listen to scroll events on. | `window` |
-| `horizontal` | Boolean | Set this to `true` to listen for scroll events when using horizontally scrolling layouts. | `false` |
+| `horizontal` | Boolean/String | Set this to `true` to explicitly target horizontal scrolling. In `auto` mode, Quovadis will try to figure out the orientation on its own. | `'auto'` |
 | `event` | Boolean | Determines whether Quovadis should fire a `scrollDirectionChange` event when scroll direction changes. | `true` |
 | `historyLength` | Number | The number of records to keep to determine the scroll direction. | `32` |
 | `historyMaxAge` | Number | The maximum duration for a record to determine the scroll direction. | `512` |
