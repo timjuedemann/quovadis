@@ -90,6 +90,14 @@ window.addEventListener('scrollDirectionChange', function(e) {
 | `historyMaxAge` | Number | The maximum duration for a record to determine the scroll direction. | `512` |
 | `thresholdPixels` | Number | The number of pixels to scroll before re-evaluating the direction | `64` |
 
+## Methods
+
+| Method | Description  |
+|---------------------------|-------------|---------------|---------|
+| `init()` | Initializes the Quovadis instance. This is also the function that returns the EventListener for the scroll context. |
+| `detach()` | Removes the EventListener from the Quovadis instance. |
+| `reattach(el)` | Attaches the Quovadis EventListener to a new scroll context. This is useful when working with dynamic AJAX content. Accepts an element parameter. |
+
 ## License
 
 This project is licensed under the MIT License.

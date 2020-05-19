@@ -12,6 +12,7 @@ class Quovadis {
         this.history = Array(this.historyLength);
         this.scrollingElement = this.context === document.documentElement ? window : this.context;
         this.isVer = this.horizontal === 'auto' ? !this.getOrientation() : !this.horizontal;
+        this.init();
         return this;
     }
 
@@ -52,11 +53,7 @@ class Quovadis {
     }
 
     getLastChild(el) {
-        if ((el.nodeName != 'LINK') && 
-            (el.nodeName != 'SCRIPT') &&
-            (el.style.position != 'fixed') &&
-            (el.style.position != 'absolute') &&
-            (el.style.position != 'sticky')) {
+        if ((el.nodeName != "SCRIPT") && (el.style.position != 'absolute')) {
             return el;
         } else {
             return this.getLastChild(el.previousElementSibling);
@@ -68,11 +65,20 @@ class Quovadis {
         this.pivotTime = 0;
         this.pivot = this.isVer ? this.context.scrollTop : this.context.scrollLeft;
         this.callback();
-        return this.scrollingElement.addEventListener('scroll', this.handler.bind(this));
+        this.handler = this.handler.bind(this);
+        return this.scrollingElement.addEventListener('scroll', this.handler);
+    }
+    
+    detach() {
+        return this.scrollingElement.removeEventListener('scroll', this.handler);
     }
 
-    stop() {
-        return this.scrollingElement.removeEventListener('scroll', this.handler.bind(this));
+    reattach(el) {
+        this.context = el;
+        this.history = Array(this.historyLength);
+        this.scrollingElement = this.context === document.documentElement ? window : this.context;
+        this.isVer = this.horizontal === 'auto' ? !this.getOrientation() : !this.horizontal;
+        this.init();
     }
 
     tick() {
@@ -128,17 +134,17 @@ class Quovadis {
         }
     }
 
+    handler (event) {
+        this.e = event;
+        window.requestAnimationFrame(this.tick.bind(this));
+    }
+
     dispatchEvent() {
         window.dispatchEvent(new CustomEvent('scrollDirectionChange', {
             detail: {
                 direction: this.dir
             }
         }));
-    }
-
-    handler(event) {
-        this.e = event;
-        window.requestAnimationFrame(this.tick.bind(this));
     }
 }
 
