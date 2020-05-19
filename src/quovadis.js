@@ -4,7 +4,6 @@ class Quovadis {
         this.context = this.opt.context;
         this.prefix = this.opt.prefix;
         this.horizontal = this.opt.horizontal;
-        this.isVer = !this.horizontal;
         this.historyLength = this.opt.historyLength; // Ticks to keep in history.
         this.historyMaxAge = this.opt.historyMaxAge; // History data time-to-live (ms).
         this.thresholdPixels = this.opt.thresholdPixels; // Ignore moves smaller than this.
@@ -12,6 +11,7 @@ class Quovadis {
         this.event = this.opt.event;
         this.history = Array(this.historyLength);
         this.scrollingElement = this.context === document.documentElement ? window : this.context;
+        this.isVer = this.horizontal === 'auto' ? !this.getOrientation() : !this.horizontal;
         return this;
     }
 
@@ -19,12 +19,11 @@ class Quovadis {
         return {
             prefix: 'scrolling',
             context: document.documentElement,
-            horizontal: false,
+            horizontal: 'auto',
             historyLength: 32,
             historyMaxAge: 512,
             thresholdPixels: 64,
             callback: function() {
-                console.log(this);
                 let classes = document.documentElement.classList;
                 for (var i = classes.length - 1; i >= 0; i--) {
                     if (classes[i].startsWith(this.opt.prefix)) {
@@ -34,6 +33,33 @@ class Quovadis {
                 classes.add(this.prefix + '-' + this.dir);
             },
             event: true,
+        }
+    }
+
+    getOrientation() {
+        var scr = this.scrollingElement,
+            con = this.context,
+            el = con === document.documentElement ? this.getLastChild(document.body.lastElementChild) : this.getLastChild(con.lastElementChild),
+            scrWidth = scr === con ? scr.clientWidth : window.innerWidth,
+            scrHeight = scr === con ? scr.clientHeight : window.innerHeight;
+
+        if (el.getBoundingClientRect().left + con.scrollLeft > scrWidth) {
+            return true;
+        } else if (el.getBoundingClientRect().top + con.scrollTop > scrHeight) {
+            return false;
+        }
+
+    }
+
+    getLastChild(el) {
+        if ((el.nodeName != 'LINK') && 
+            (el.nodeName != 'SCRIPT') &&
+            (el.style.position != 'fixed') &&
+            (el.style.position != 'absolute') &&
+            (el.style.position != 'sticky')) {
+            return el;
+        } else {
+            return this.getLastChild(el.previousElementSibling);
         }
     }
 
@@ -60,7 +86,10 @@ class Quovadis {
         y = Math.min(yMax, y);
 
         // Update history
-        this.history.unshift({ y, t });
+        this.history.unshift({
+            y,
+            t
+        });
         this.history.pop();
 
         // Are we continuing in the same direction?
