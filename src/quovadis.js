@@ -2,6 +2,7 @@ class Quovadis {
     constructor(opt = {}) {
         this.opt = Object.assign({}, this.defaults(), opt);
         this.context = this.opt.context;
+        this.debug = this.opt.debug;
         this.prefix = this.opt.prefix;
         this.horizontal = this.opt.horizontal;
         this.historyLength = this.opt.historyLength; // Ticks to keep in history.
@@ -12,7 +13,6 @@ class Quovadis {
         this.history = Array(this.historyLength);
         this.scrollingElement = this.context === document.documentElement ? window : this.context;
         this.isVer = this.horizontal === 'auto' ? !this.getOrientation() : !this.horizontal;
-        this.init();
         return this;
     }
 
@@ -20,6 +20,7 @@ class Quovadis {
         return {
             prefix: 'scrolling',
             context: document.documentElement,
+            debug: false,
             horizontal: 'auto',
             historyLength: 32,
             historyMaxAge: 512,
@@ -37,6 +38,28 @@ class Quovadis {
         }
     }
 
+    attach() {
+        this.dir = this.isVer ? 'down' : 'right'; // 'up' or 'down'
+        this.pivotTime = 0;
+        this.pivot = this.isVer ? this.context.scrollTop : this.context.scrollLeft;
+        this.callback();
+        this.handler = this.handler.bind(this);
+        if (this.debug) console.log(this);
+        return this.scrollingElement.addEventListener('scroll', this.handler);
+    }
+
+    detach() {
+        return this.scrollingElement.removeEventListener('scroll', this.handler);
+    }
+
+    reattach(el) {
+        this.context = el;
+        this.history = Array(this.historyLength);
+        this.scrollingElement = this.context === document.documentElement ? window : this.context;
+        this.isVer = this.horizontal === 'auto' ? !this.getOrientation() : !this.horizontal;
+        this.attach();
+    }
+
     getOrientation() {
         var scr = this.scrollingElement,
             con = this.context,
@@ -49,37 +72,21 @@ class Quovadis {
         } else if (el.getBoundingClientRect().top + con.scrollTop > scrHeight) {
             return false;
         }
-
     }
 
     getLastChild(el) {
-        if ((el.nodeName != "SCRIPT") && (el.style.position != 'absolute')) {
+        var css = getComputedStyle(el);
+        if ((el.nodeName != "SCRIPT") && 
+            (el.nodeName != "LINK") && 
+            (css.getPropertyValue('position') != "absolute") &&
+            (css.getPropertyValue('position') != "fixed") &&
+            (css.getPropertyValue('position') != "sticky")) {
+            if (this.debug) console.dir(el);
             return el;
         } else {
             return this.getLastChild(el.previousElementSibling);
-        }
-    }
-
-    init() {
-        this.dir = this.isVer ? 'down' : 'right'; // 'up' or 'down'
-        this.pivotTime = 0;
-        this.pivot = this.isVer ? this.context.scrollTop : this.context.scrollLeft;
-        this.callback();
-        this.handler = this.handler.bind(this);
-        return this.scrollingElement.addEventListener('scroll', this.handler);
-    }
-    
-    detach() {
-        return this.scrollingElement.removeEventListener('scroll', this.handler);
-    }
-
-    reattach(el) {
-        this.context = el;
-        this.history = Array(this.historyLength);
-        this.scrollingElement = this.context === document.documentElement ? window : this.context;
-        this.isVer = this.horizontal === 'auto' ? !this.getOrientation() : !this.horizontal;
-        this.init();
-    }
+        }   
+    }    
 
     tick() {
         let y = this.isVer ? this.context.scrollTop : this.context.scrollLeft;
@@ -119,7 +126,6 @@ class Quovadis {
 
         // Have we exceeded threshold?
         if (Math.abs(y - this.pivot) > this.thresholdPixels) {
-            console.log('threshold');
             this.pivot = y;
             this.pivotTime = t;
             if (this.isVer) {
